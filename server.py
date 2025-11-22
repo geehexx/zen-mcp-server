@@ -533,11 +533,16 @@ def configure_providers():
             logger.debug(f"Registered provider: {ProviderType.DIAL.value}")
         if bedrock_enabled:
             try:
-                ModelProviderRegistry.register_provider(ProviderType.BEDROCK, BedrockModelProvider)
+                # Factory function for Bedrock provider (doesn't need API key, uses boto3 credentials)
+                def bedrock_provider_factory(api_key=None):
+                    region = get_env("AWS_REGION", "us-east-1")
+                    return BedrockModelProvider(api_key=api_key, region=region)
+
+                ModelProviderRegistry.register_provider(ProviderType.BEDROCK, bedrock_provider_factory)
                 registered_providers.append(ProviderType.BEDROCK.value)
                 logger.debug(f"Registered provider: {ProviderType.BEDROCK.value}")
             except Exception as e:
-                logger.warning(f"Failed to register Bedrock provider: {e}")
+                logger.error(f"Failed to register Bedrock provider: {e}", exc_info=True)
 
     # 2. Custom provider second (for local/private models)
     if has_custom:
