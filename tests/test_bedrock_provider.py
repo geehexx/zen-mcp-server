@@ -158,8 +158,8 @@ class TestBedrockModelProvider:
 
         assert result.content == 'Hello, world!'
         assert result.provider == ProviderType.BEDROCK
-        assert result.input_tokens == 10
-        assert result.output_tokens == 5
+        assert result.usage['input_tokens'] == 10
+        assert result.usage['output_tokens'] == 5
 
     def test_generate_content_with_alias(self, mock_boto3):
         """Test generate_content with model alias."""
@@ -204,10 +204,12 @@ class TestBedrockModelProvider:
         mock_boto3.client.return_value = mock_runtime
 
         provider = BedrockModelProvider()
-        provider._model_cache['test-model'] = Mock()
+        # Use a valid Claude model ID that will pass format_request
+        model_id = 'anthropic.claude-3-haiku-20240307-v1:0'
+        provider._model_cache[model_id] = Mock()
 
         with pytest.raises(RuntimeError, match="Bedrock API error"):
-            provider.generate_content('test-model', [{'role': 'user', 'content': 'Test'}])
+            provider.generate_content(model_id, [{'role': 'user', 'content': 'Test'}])
 
     def test_intelligence_score_estimation(self, mock_boto3):
         """Test intelligence score estimation for different models."""

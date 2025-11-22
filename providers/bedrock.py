@@ -363,31 +363,44 @@ class BedrockModelProvider(ModelProvider):
         
         return ModelResponse(
             content=content,
-            model=response_body.get('model', 'unknown'),
+            model_name=response_body.get('model', 'unknown'),
             provider=ProviderType.BEDROCK,
-            input_tokens=usage.get('input_tokens', 0),
-            output_tokens=usage.get('output_tokens', 0),
+            usage={
+                'input_tokens': usage.get('input_tokens', 0),
+                'output_tokens': usage.get('output_tokens', 0),
+                'total_tokens': usage.get('input_tokens', 0) + usage.get('output_tokens', 0),
+            },
         )
 
     def _parse_titan_response(self, response_body: dict) -> ModelResponse:
         result = response_body['results'][0]
         content = result['outputText']
+        token_count = result.get('tokenCount', 0)
         
         return ModelResponse(
             content=content,
-            model='titan',
+            model_name='titan',
             provider=ProviderType.BEDROCK,
-            input_tokens=0,
-            output_tokens=result.get('tokenCount', 0),
+            usage={
+                'input_tokens': 0,
+                'output_tokens': token_count,
+                'total_tokens': token_count,
+            },
         )
 
     def _parse_llama_response(self, response_body: dict) -> ModelResponse:
+        input_tokens = response_body.get('prompt_token_count', 0)
+        output_tokens = response_body.get('generation_token_count', 0)
+        
         return ModelResponse(
             content=response_body['generation'],
-            model='llama',
+            model_name='llama',
             provider=ProviderType.BEDROCK,
-            input_tokens=response_body.get('prompt_token_count', 0),
-            output_tokens=response_body.get('generation_token_count', 0),
+            usage={
+                'input_tokens': input_tokens,
+                'output_tokens': output_tokens,
+                'total_tokens': input_tokens + output_tokens,
+            },
         )
 
     def _parse_mistral_response(self, response_body: dict) -> ModelResponse:
@@ -395,10 +408,13 @@ class BedrockModelProvider(ModelProvider):
         
         return ModelResponse(
             content=output['text'],
-            model='mistral',
+            model_name='mistral',
             provider=ProviderType.BEDROCK,
-            input_tokens=0,
-            output_tokens=0,
+            usage={
+                'input_tokens': 0,
+                'output_tokens': 0,
+                'total_tokens': 0,
+            },
         )
 
     def get_provider_type(self) -> ProviderType:
